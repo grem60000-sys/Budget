@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#141F1A">
+<title>Bocal — budget partagé</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<!-- ══════════════════════════════════════════════════════════════
+     ▼▼▼  LES DEUX SEULES LIGNES À REMPLIR  ▼▼▼
+     Elles se trouvent dans Supabase : Project Settings → API
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+  window.SUPABASE_URL = "https://ugrzvirjnsvtlgdmfjhg.supabase.co";
+  window.SUPABASE_KEY = "";   // la clé « anon public », longue chaîne
+</script>
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<style>
+:root{
+  --bg:#141F1A; --bg2:#1B2C24; --card:#22382E; --card2:#2B4839;
+  --line:rgba(240,233,214,.11); --line2:rgba(240,233,214,.2);
+  --ink:#F0E9D6; --dim:rgba(240,233,214,.55); --faint:rgba(240,233,214,.3);
+  --olive:#B4CE5E; --gold:#F5B93A; --tomato:#E9583A; --plum:#B48AEA;
+  --disp:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"Instrument Sans",system-ui,sans-serif;
+  --num:"JetBrains Mono",ui-monospace,monospace;
+  --pad:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;
+  background-image:radial-gradient(120% 60% at 50% -10%,rgba(180,206,94,.09),transparent 70%);
+  background-attachment:fixed;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased;
+}
+#app{max-width:480px;margin:0 auto;padding:0 0 130px;min-height:100%}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+input{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--disp);margin:0;letter-spacing:-.03em;font-weight:800}
+.num{font-family:var(--num);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600}
+
+/* ── contrôles ──────────────────────────────────────────────── */
+.btn{background:var(--olive);color:#16211A;border-radius:16px;padding:16px;font-family:var(--disp);
+     font-weight:800;font-size:16.5px;width:100%;transition:transform .12s,filter .12s;letter-spacing:-.01em}
+.btn:active{transform:scale(.975);filter:brightness(1.08)}
+.btn.quiet{background:var(--card);color:var(--ink)}
+.btn.ghost{background:none;border:1px solid var(--line2);color:var(--ink)}
+.btn.danger{background:none;border:1px solid rgba(233,88,58,.45);color:var(--tomato)}
+.field{display:flex;flex-direction:column;gap:8px}
+.field>label{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.input{background:var(--card);border:1.5px solid var(--line);border-radius:15px;padding:15px 16px;
+       font-size:17px;width:100%;outline:none;transition:border-color .15s}
+.input:focus{border-color:var(--olive)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--card);border:1.5px solid var(--line);border-radius:13px;min-height:46px;
+      padding:0 14px;display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:600}
+.chip.sq{width:46px;padding:0;justify-content:center;font-size:21px}
+.chip[aria-pressed="true"]{border-color:var(--olive);background:var(--card2)}
+.stack{display:flex;flex-direction:column;gap:15px}
+.duo{display:flex;gap:10px}.duo>*{flex:1}
+.note{font-size:12.5px;color:var(--faint);line-height:1.55}
+
+/* ── écran d'installation ───────────────────────────────────── */
+.setup{padding:44px var(--pad);display:flex;flex-direction:column;gap:22px}
+.setup ol{padding-left:20px;margin:0;color:var(--dim);font-size:14px;line-height:1.75}
+.setup code{font-family:var(--num);font-size:12.5px;background:var(--card);padding:2px 6px;border-radius:6px;color:var(--olive)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;overflow:auto;
+    font-family:var(--num);font-size:11.5px;line-height:1.6;color:var(--olive);margin:0}
+
+/* ── porte d'entrée ─────────────────────────────────────────── */
+.gate{padding:52px var(--pad) 40px;display:flex;flex-direction:column;gap:26px;
+      min-height:100vh;justify-content:center}
+.wordmark{font-family:var(--disp);font-weight:800;font-size:58px;letter-spacing:-.055em;line-height:.88}
+.wordmark span{color:var(--olive)}
+.code-in{font-family:var(--num);letter-spacing:.3em;text-transform:uppercase;font-size:21px;text-align:center}
+
+/* ── entête ─────────────────────────────────────────────────── */
+header{position:sticky;top:0;z-index:30;padding:14px var(--pad) 12px;display:flex;align-items:center;gap:12px;
+       background:linear-gradient(var(--bg) 68%,rgba(20,31,26,0));backdrop-filter:blur(6px)}
+.mark{font-family:var(--disp);font-weight:800;font-size:19px;letter-spacing:-.05em}
+.mark span{color:var(--olive)}
+.live{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;letter-spacing:.1em;
+      text-transform:uppercase;color:var(--faint);font-weight:600}
+.live i{width:6px;height:6px;border-radius:50%;background:var(--olive);animation:beat 2.6s infinite}
+.live.off i{background:var(--gold);animation:none}
+@keyframes beat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+.avs{margin-left:auto;display:flex;align-items:center}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;
+    background:var(--card2);border:2px solid var(--bg);margin-left:-8px}
+.av.on{box-shadow:0 0 0 2px var(--olive)}
+.cog{font-size:17px;color:var(--faint);padding:8px 0 8px 12px}
+
+/* ── héros ──────────────────────────────────────────────────── */
+.hero{padding:4px var(--pad) 20px;display:flex;gap:20px;align-items:center}
+.hero .side{flex:1;min-width:0}
+.hero .big{font-family:var(--disp);font-weight:800;font-size:42px;letter-spacing:-.05em;line-height:1;
+           font-variant-numeric:tabular-nums;transition:color .4s}
+.hero .sub{color:var(--dim);font-size:13px;margin-top:7px}
+.verdict{display:inline-flex;align-items:center;gap:7px;margin-top:13px;padding:7px 13px;border-radius:99px;
+         font-size:12.5px;font-weight:700;background:var(--card);border:1px solid var(--line)}
+.verdict i{width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* ── onglets ────────────────────────────────────────────────── */
+.tabs{display:flex;gap:8px;padding:0 var(--pad) 16px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{white-space:nowrap;padding:9px 15px;border-radius:99px;background:var(--card);border:1px solid var(--line);
+     font-size:13.5px;font-weight:600;color:var(--dim);transition:.15s}
+.tab[aria-pressed="true"]{background:var(--ink);color:#16211A;border-color:var(--ink)}
+
+/* ── cartes bocaux ──────────────────────────────────────────── */
+.rows{padding:0 var(--pad);display:flex;flex-direction:column;gap:10px}
+.card{display:flex;align-items:stretch;background:var(--card);border:1px solid var(--line);
+      border-radius:20px;overflow:hidden;transition:transform .12s}
+.card:active{transform:scale(.988)}
+.card .open{display:flex;gap:14px;align-items:center;flex:1;min-width:0;padding:13px 4px 13px 14px;text-align:left}
+.card .mid{flex:1;min-width:0}
+.card .nm{font-family:var(--disp);font-weight:700;font-size:17px;letter-spacing:-.025em;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta{font-size:12.5px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .amt{text-align:right;padding-right:4px}
+.card .amt b{font-family:var(--num);font-size:16.5px;font-weight:700;display:block;letter-spacing:-.02em}
+.card .amt i{font-style:normal;font-size:9.5px;color:var(--faint);letter-spacing:.14em;text-transform:uppercase}
+.card .quick{width:54px;flex-shrink:0;display:grid;place-items:center;font-size:24px;font-weight:300;
+             color:var(--olive);border-left:1px solid var(--line);background:rgba(180,206,94,.05)}
+.card .quick:active{background:rgba(180,206,94,.16)}
+
+.empty{margin:6px var(--pad);padding:30px 22px;border:1.5px dashed var(--line2);border-radius:22px;
+       text-align:center;color:var(--dim)}
+.empty b{display:block;font-family:var(--disp);font-size:20px;color:var(--ink);margin-bottom:8px}
+
+.sect{padding:26px var(--pad) 0}
+.sect h3{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);
+         font-weight:600;margin-bottom:8px}
+.fitem{display:flex;gap:13px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.fitem .fe{font-size:19px;width:26px;text-align:center;flex-shrink:0}
+.fitem .ft{flex:1;min-width:0}
+.fitem .ft b{font-weight:600;font-size:14.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fitem .ft small{color:var(--faint);font-size:11.5px}
+.fitem .fa{font-family:var(--num);font-weight:700;font-size:14.5px}
+.x{color:var(--faint);padding:4px 6px;font-size:19px;line-height:1}
+
+/* ── bouton flottant ────────────────────────────────────────── */
+.fab{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);
+     z-index:40;display:flex;gap:9px;align-items:center;background:var(--olive);color:#16211A;
+     padding:16px 28px;border-radius:99px;font-family:var(--disp);font-weight:800;font-size:16.5px;
+     box-shadow:0 12px 30px rgba(0,0,0,.5);letter-spacing:-.01em}
+.fab:active{transform:translateX(-50%) scale(.955)}
+
+/* ── feuilles ───────────────────────────────────────────────── */
+.scrim{position:fixed;inset:0;background:rgba(8,14,11,.76);z-index:50;display:flex;align-items:flex-end;
+       justify-content:center;animation:fade .18s;backdrop-filter:blur(3px)}
+@keyframes fade{from{opacity:0}}
+.sheet{background:var(--bg2);border-top:1px solid var(--line2);border-radius:28px 28px 0 0;width:100%;
+       max-width:480px;max-height:93vh;overflow:auto;padding:8px var(--pad) calc(28px + env(safe-area-inset-bottom));
+       animation:up .3s cubic-bezier(.2,.9,.25,1)}
+@keyframes up{from{transform:translateY(34px)}}
+.grab{width:40px;height:4px;border-radius:9px;background:var(--line2);margin:5px auto 18px}
+.sheet h2{font-size:25px;margin-bottom:18px}
+.amount{font-family:var(--disp);font-weight:800;font-size:56px;letter-spacing:-.055em;text-align:center;
+        padding:6px 0 2px;font-variant-numeric:tabular-nums;line-height:1.05}
+.amount small{font-size:26px;color:var(--faint)}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.key{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 0;
+     font-family:var(--num);font-size:23px;font-weight:700}
+.key:active{background:var(--card2)}
+.seg{display:flex;gap:13px;align-items:center;background:var(--card);border:1.5px solid var(--line);
+     border-radius:16px;padding:13px 15px;text-align:left;width:100%}
+.seg[aria-pressed="true"]{border-color:var(--olive);background:var(--card2)}
+.seg .st{flex:1}
+.seg .st b{display:block;font-weight:600;font-size:14.5px}
+.seg .st small{color:var(--dim);font-size:12px;line-height:1.4}
+.codebox{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+         border-radius:15px;padding:15px 16px;font-family:var(--num);font-size:20px;letter-spacing:.2em;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translateX(-50%);
+       z-index:60;background:var(--ink);color:#16211A;padding:12px 19px;border-radius:99px;font-weight:600;
+       font-size:13.5px;box-shadow:0 10px 26px rgba(0,0,0,.45);animation:fade .2s;max-width:88%;text-align:center}
+.banner{margin:0 var(--pad) 12px;padding:12px 15px;border-radius:15px;background:rgba(245,185,58,.12);
+        border:1px solid rgba(245,185,58,.28);color:var(--gold);font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+/* ═══ constantes ═══════════════════════════════════════════════ */
+const DAY = 86400000;
+const PROFILES = {
+  regulier:{nom:'Régulier',      desc:"Un peu chaque jour — courses, essence, cantine",              f:t=>t},
+  depart:  {nom:'Gros départ',   desc:"Ça part très fort puis ça retombe — transport, courses de départ", f:t=>1-Math.pow(1-t,2.4)},
+  montee:  {nom:'Ça monte',      desc:"Doucement puis ça s'emballe — cadeaux, fin de mois",          f:t=>Math.pow(t,2.4)},
+  unefois: {nom:'Une seule fois',desc:"Tout d'un coup au début — billets, caution, acompte",         f:t=>t>0?1:0},
+};
+const EMOJIS=['🛒','🍽️','⛽','🚗','🏠','💡','📱','👕','💊','🎁','🍿','☕','🍺','✈️','🏨','🚄','🎓','🐈','🧴','🛠️','🎮','📚','💇','🎂','🌱','🏊','🎸','🩺','🧾','🚲','🍕','🧃'];
+const ESCMOJIS=['✈️','🏖️','⛰️','🎄','🏕️','🚗','🛳️','🎡','🎿','🏰'];
+const AVATARS=['🦊','🐙','🐝','🦉','🐢','🦩','🐳','🦔','🐧','🦄','🐸','🦜'];
+const ALPHA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+const eur=(n,d=0)=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+const money=n=>Number.isInteger(n)?eur(n):eur(n,2);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const newCode=()=>Array.from({length:8},()=>ALPHA[Math.floor(Math.random()*ALPHA.length)]).join('');
+const nb=v=>parseFloat(String(v).replace(',','.'))||0;
+
+/* mémoire locale, avec repli si le navigateur la refuse */
+const mem={};
+const store={
+  get(k){ try{return localStorage.getItem(k)}catch(e){return mem[k]??null} },
+  set(k,v){ try{localStorage.setItem(k,v)}catch(e){mem[k]=v} },
+  del(k){ try{localStorage.removeItem(k)}catch(e){delete mem[k]} },
+};
+
+/* ═══ état ═════════════════════════════════════════════════════ */
+let sb=null, moi=null, S=null, tab='tout', sheet=null, draft={}, live=false, canal=null;
+const blank=()=>({v:1,membres:{},enveloppes:[],depenses:[],escapades:[]});
+const app=document.getElementById('app');
+
+/* ═══ fusion (deux téléphones en même temps) ═══════════════════ */
+function mergeList(a=[],b=[]){
+  const m=new Map();
+  for(const it of [...a,...b]){const p=m.get(it.id); if(!p||(it.maj||0)>=(p.maj||0)) m.set(it.id,it);}
+  return [...m.values()];
+}
+function merge(a,b){
+  if(!a) return b; if(!b) return a;
+  const membres={...(a.membres||{})};
+  for(const [k,v] of Object.entries(b.membres||{}))
+    if(!membres[k]||(v.vu||0)>(membres[k].vu||0)) membres[k]=v;
+  return {v:1,membres,
+    enveloppes:mergeList(a.enveloppes,b.enveloppes),
+    depenses:mergeList(a.depenses,b.depenses),
+    escapades:mergeList(a.escapades,b.escapades)};
+}
+
+/* ═══ base ═════════════════════════════════════════════════════ */
+async function fetchFoyer(code){
+  const {data,error}=await sb.from('foyers').select('data').eq('code',code).maybeSingle();
+  if(error) throw error;
+  return data ? data.data : null;
+}
+let pushT=null;
+function push(){ clearTimeout(pushT); pushT=setTimeout(sauver,300); }
+async function sauver(){
+  try{
+    const distant=await fetchFoyer(moi.code);
+    S=merge(distant,S);
+    const {error}=await sb.from('foyers').upsert({code:moi.code,data:S,maj:new Date().toISOString()});
+    if(error) throw error;
+    live=true;
+  }catch(e){ live=false; console.warn(e); }
+  paint();
+}
+function ecouter(){
+  if(canal) sb.removeChannel(canal);
+  canal=sb.channel('foyer-'+moi.code)
+    .on('postgres_changes',
+        {event:'*',schema:'public',table:'foyers',filter:'code=eq.'+moi.code},
+        p=>{ if(p.new?.data) recevoir(p.new.data); })
+    .subscribe(st=>{ live = st==='SUBSCRIBED'; paint(); });
+}
+function recevoir(distant){
+  const avant=new Set(S.depenses.filter(d=>!d.sup).map(d=>d.id));
+  S=merge(S,distant);
+  for(const d of S.depenses){
+    if(!d.sup && !avant.has(d.id) && d.par!==moi.id){
+      const e=S.enveloppes.find(x=>x.id===d.env), m=S.membres[d.par];
+      toast(`${m?m.nom:'Quelqu\'un'} · ${e?e.emoji+' '+e.nom:''} −${money(d.montant)}`);
+    }
+  }
+  paint(); if(sheet) renderSheet();
+}
+
+/* ═══ rythme ═══════════════════════════════════════════════════ */
+function bornes(env,now=Date.now()){
+  let deb=new Date(env.debut).getTime(); const len=env.jours*DAY;
+  if(env.recurrent) while(now>=deb+len) deb+=len;
+  return {deb,fin:deb+len,len};
+}
+function etat(env,now=Date.now()){
+  const {deb,fin,len}=bornes(env,now);
+  const ecoule=clamp((now-deb)/len,0,1);
+  const attFrac=clamp(PROFILES[env.profil].f(ecoule),0,1);
+  const depense=S.depenses.filter(d=>!d.sup&&d.env===env.id&&d.at>=deb&&d.at<fin).reduce((s,d)=>s+d.montant,0);
+  const reste=env.montant-depense, attendu=env.montant*attFrac;
+  const joursR=Math.max(0,Math.ceil((fin-now)/DAY));
+  const rythme=attendu>.5?depense/attendu:(depense>0?3:1);
+  const projete=attFrac>.05?depense/attFrac:null;
+  let ton='ok',mot='pile poil';
+  if(depense>env.montant){ton='mal';mot='bocal vide';}
+  else if(ecoule>=1){ton='ok';mot='terminé, tenu';}
+  else if(rythme>1.3){ton='mal';mot='ça part vite';}
+  else if(rythme>1.08){ton='moy';mot='un peu vite';}
+  else if(rythme<.75){ton='ok';mot='tranquille';}
+  return {deb,fin,ecoule,attFrac,depense,reste,attendu,joursR,rythme,projete,ton,mot,
+          niveau:clamp(reste/env.montant,0,1),attNiveau:clamp(1-attFrac,0,1)};
+}
+const TON={ok:'var(--olive)',moy:'var(--gold)',mal:'var(--tomato)'};
+
+/* ═══ le bocal ═════════════════════════════════════════════════ */
+let jn=0;
+function bocal(niveau,attNiveau,ton,w=54,vague=false){
+  const id='j'+(jn++), h=Math.round(w*1.3);
+  const bx=w*.1,by=h*.2,bw=w-bx*2,bh=h-by-h*.04,r=w*.17;
+  const yl=by+bh*(1-niveau), ya=by+bh*(1-attNiveau), col=TON[ton];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true" style="flex-shrink:0;display:block">
+  <defs><clipPath id="${id}"><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}"/></clipPath></defs>
+  <rect x="${w*.24}" y="${h*.05}" width="${w*.52}" height="${h*.105}" rx="${w*.045}" fill="var(--card2)"/>
+  <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}" fill="rgba(0,0,0,.25)"/>
+  <g clip-path="url(#${id})">
+    <rect x="${bx}" y="${yl}" width="${bw}" height="${bh}" fill="${col}" opacity=".9"
+          style="transition:y .55s cubic-bezier(.3,.9,.3,1)"/>
+    ${vague&&niveau>.02&&niveau<.99?`<path d="M0 7 Q ${w*.5} -4 ${w} 7 T ${w*2} 7 V ${h} H0 Z" fill="${col}" opacity=".9">
+      <animateTransform attributeName="transform" type="translate" dur="5s" repeatCount="indefinite"
+        values="0 ${yl-7}; ${-w} ${yl-7}"/></path>`:''}
+    <rect x="${bx}" y="${yl}" width="${bw}" height="2" fill="#fff" opacity=".3"/>
+  </g>
+  <line x1="${bx-1.5}" y1="${ya}" x2="${bx+bw+1.5}" y2="${ya}" stroke="var(--ink)" stroke-width="1.5"
+        stroke-dasharray="3 3" opacity=".65"/>
+  <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${r}" fill="none" stroke="var(--ink)"
+        stroke-width="1.4" opacity=".32"/></svg>`;
+}
+function courbe(k,w=50,h=22){
+  const f=PROFILES[k].f;
+  const p=Array.from({length:17},(_,i)=>{const t=i/16;return `${(t*w).toFixed(1)},${(h-f(t)*h).toFixed(1)}`});
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true" style="flex-shrink:0">
+    <polyline points="${p.join(' ')}" fill="none" stroke="var(--olive)" stroke-width="2.2"
+      stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function quand(t){
+  const d=(Date.now()-t)/60000;
+  if(d<1) return "à l'instant";
+  if(d<60) return `il y a ${Math.round(d)} min`;
+  if(d<1440) return `il y a ${Math.round(d/60)} h`;
+  return new Date(t).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+}
+function toast(t){
+  document.querySelectorAll('.toast').forEach(x=>x.remove());
+  const el=document.createElement('div'); el.className='toast'; el.textContent=t;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),2600);
+}
+const val=id=>(document.getElementById(id)||{}).value??'';
+
+/* ═══ écrans ═══════════════════════════════════════════════════ */
+function paint(){ app.innerHTML = !sb ? vueSetup() : (moi ? vueFoyer() : vuePorte()); }
+
+function vueSetup(){
+  return `<div class="setup">
+    <div><div class="wordmark">BO<span>CAL</span></div>
+    <p style="color:var(--dim);margin-top:12px">Plus qu'une étape&nbsp;: brancher la base qui synchronise vos deux téléphones. Une dizaine de minutes, gratuit, une seule fois.</p></div>
+    <div><h3 style="font-size:16px;margin-bottom:10px">1. Créer la base</h3>
+    <ol><li>Aller sur <code>supabase.com</code>, créer un compte, puis <b>New project</b>. Notez le mot de passe qu'il vous demande.</li>
+    <li>Une fois le projet prêt&nbsp;: menu <b>SQL Editor</b> → <b>New query</b> → coller ceci → <b>Run</b>.</li></ol>
+    <pre>create table foyers (
+  code text primary key,
+  data jsonb not null default '{}'::jsonb,
+  maj  timestamptz not null default now()
+);
+alter table foyers enable row level security;
+create policy "acces par code" on foyers
+  for all to anon using (true) with check (true);
+alter publication supabase_realtime add table foyers;</pre></div>
+    <div><h3 style="font-size:16px;margin-bottom:10px">2. Récupérer les deux clés</h3>
+    <ol><li>Menu <b>Project Settings</b> → <b>API</b>.</li>
+    <li>Copier <b>Project URL</b> et la clé <b>anon public</b>.</li>
+    <li>Dans votre dépôt GitHub, ouvrir <code>index.html</code>, cliquer sur le crayon, et remplir les deux lignes tout en haut&nbsp;: <code>SUPABASE_URL</code> et <code>SUPABASE_KEY</code>. <b>Commit changes</b>.</li></ol></div>
+    <div><h3 style="font-size:16px;margin-bottom:10px">3. Mettre en ligne</h3>
+    <ol><li>Dépôt GitHub → <b>Settings</b> → <b>Pages</b> → source <b>Deploy from a branch</b>, branche <code>main</code>, dossier <code>/ (root)</code> → <b>Save</b>.</li>
+    <li>Au bout d'une minute, votre adresse apparaît. C'est celle-là que vous partagez à votre femme.</li></ol></div>
+    <p class="note">Cette page se rechargera d'elle-même une fois les deux clés remplies.</p>
+  </div>`;
+}
+
+function vuePorte(){
+  const d=draft.porte||(draft.porte={mode:'creer',code:'',nom:'',emoji:AVATARS[0]});
+  return `<div class="gate">
+    <div><div class="wordmark">BO<span>CAL</span></div>
+    <p style="color:var(--dim);margin-top:12px">Le budget du foyer, à deux. Chaque poste est un bocal qui se vide&nbsp;; le trait pointillé montre où vous devriez en être aujourd'hui.</p></div>
+    <div class="duo">
+      <button class="btn ${d.mode==='creer'?'':'ghost'}" data-a="mode" data-v="creer">Créer un foyer</button>
+      <button class="btn ${d.mode==='rejoindre'?'':'ghost'}" data-a="mode" data-v="rejoindre">Rejoindre</button>
+    </div>
+    ${d.mode==='rejoindre'?`<div class="field"><label>Code du foyer</label>
+      <input class="input code-in" id="i-code" maxlength="8" placeholder="••••••••" value="${esc(d.code)}"
+             autocapitalize="characters" autocorrect="off" spellcheck="false"></div>`:''}
+    <div class="field"><label>Votre prénom</label>
+      <input class="input" id="i-nom" placeholder="Jérémy" value="${esc(d.nom)}"></div>
+    <div class="field"><label>Votre tête</label>
+      <div class="chips">${AVATARS.map(e=>`<button class="chip sq" data-a="avatar" data-v="${e}" aria-pressed="${d.emoji===e}">${e}</button>`).join('')}</div></div>
+    <button class="btn" data-a="entrer">${d.mode==='creer'?'Ouvrir le foyer':'Entrer'}</button>
+    <p class="note">Le code du foyer est la seule clé&nbsp;: qui l'a, voit tout. Gardez-le entre vous.</p>
+  </div>`;
+}
+
+function vueFoyer(){
+  const now=Date.now();
+  const escs=S.escapades.filter(e=>!e.sup);
+  const tousEnv=S.enveloppes.filter(e=>!e.sup);
+  let envs=tousEnv;
+  if(tab==='fixe') envs=envs.filter(e=>!e.escapade);
+  else if(tab!=='tout') envs=envs.filter(e=>e.escapade===tab);
+  envs=envs.map(e=>({e,s:etat(e,now)})).sort((a,b)=>b.s.rythme-a.s.rythme);
+
+  const tous=tousEnv.map(e=>etat(e,now));
+  const budget=tousEnv.reduce((s,e)=>s+e.montant,0);
+  const T=tous.reduce((s,x)=>({d:s.d+x.depense,a:s.a+x.attendu,r:s.r+x.reste}),{d:0,a:0,r:0});
+  const niveau=budget?clamp(T.r/budget,0,1):0, attN=budget?clamp(1-T.a/budget,0,1):0;
+  const ry=T.a>.5?T.d/T.a:1;
+  let ton='ok',mot='vous tenez le rythme';
+  if(T.d>budget){ton='mal';mot='budget dépassé';}
+  else if(ry>1.3){ton='mal';mot='ça part vite en ce moment';}
+  else if(ry>1.08){ton='moy';mot='un poil au-dessus';}
+  else if(ry<.75){ton='ok';mot='vous êtes large';}
+
+  const membres=Object.values(S.membres||{}).sort((a,b)=>(b.vu||0)-(a.vu||0));
+  const recentes=S.depenses.filter(d=>!d.sup).sort((a,b)=>b.at-a.at).slice(0,14);
+
+  return `
+  <header>
+    <div class="mark">BO<span>CAL</span></div>
+    <span class="live ${live?'':'off'}"><i></i>${live?'en direct':'hors ligne'}</span>
+    <div class="avs">
+      ${membres.slice(0,4).map(m=>`<div class="av ${now-(m.vu||0)<180000?'on':''}" title="${esc(m.nom)}">${m.emoji}</div>`).join('')}
+      <button class="cog" data-a="reglages">⚙︎</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    ${bocal(niveau,attN,ton,96,true)}
+    <div class="side">
+      <div class="eyebrow">il vous reste</div>
+      <div class="big" style="color:${TON[ton]}">${budget?money(T.r):'—'}</div>
+      <div class="sub">sur ${money(budget)} · ${tousEnv.length} bocal${tousEnv.length>1?'x':''}</div>
+      <div class="verdict" style="color:${TON[ton]}"><i></i>${mot}</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" data-a="tab" data-v="tout" aria-pressed="${tab==='tout'}">Tout</button>
+    <button class="tab" data-a="tab" data-v="fixe" aria-pressed="${tab==='fixe'}">Au quotidien</button>
+    ${escs.map(e=>`<button class="tab" data-a="tab" data-v="${e.id}" aria-pressed="${tab===e.id}">${e.emoji} ${esc(e.nom)}</button>`).join('')}
+    <button class="tab" data-a="escapade-new">+ Escapade</button>
+  </div>
+
+  ${envs.length?`<div class="rows">${envs.map(({e,s})=>carte(e,s)).join('')}</div>
+    <div class="sect" style="padding-top:14px"><button class="btn ghost" data-a="env-new">+ Nouveau bocal</button></div>`
+  :`<div class="empty"><b>Aucun bocal ici</b>Un bocal = un poste, une somme, une durée. Commencez par les courses.
+    <div style="margin-top:18px"><button class="btn" data-a="env-new">Créer un bocal</button></div></div>`}
+
+  ${recentes.length?`<div class="sect"><h3>Dernières dépenses</h3>
+    ${recentes.map(d=>{const e=S.enveloppes.find(x=>x.id===d.env),m=S.membres[d.par];
+      return `<div class="fitem"><div class="fe">${e?e.emoji:'💸'}</div>
+        <div class="ft"><b>${esc(d.note||(e?e.nom:'Dépense'))}</b>
+        <small>${m?esc(m.nom):'?'} · ${quand(d.at)}${d.note&&e?' · '+esc(e.nom):''}</small></div>
+        <div class="fa">−${money(d.montant)}</div></div>`}).join('')}</div>`:''}
+
+  <button class="fab" data-a="add">＋ Une dépense</button>`;
+}
+
+function carte(env,s){
+  const detail=(s.ecoule>=1&&!env.recurrent)?'terminé'
+    :`${s.joursR} j · ${s.mot}`+(s.projete!=null&&s.ecoule>.08&&s.ecoule<1?` · finira vers ${money(Math.round(s.projete))}`:'');
+  return `<div class="card">
+    <button class="open" data-a="env" data-v="${env.id}">
+      ${bocal(s.niveau,s.attNiveau,s.ton,42)}
+      <div class="mid"><div class="nm">${env.emoji} ${esc(env.nom)}</div>
+      <div class="meta" style="color:${s.ton==='ok'?'var(--dim)':TON[s.ton]}">${detail}</div></div>
+      <div class="amt"><b style="color:${TON[s.ton]}">${money(Math.max(s.reste,0))}</b><i>reste</i></div>
+    </button>
+    <button class="quick" data-a="add-in" data-v="${env.id}" aria-label="Ajouter une dépense">＋</button>
+  </div>`;
+}
+
+/* ═══ feuilles ═════════════════════════════════════════════════ */
+function openSheet(k,d={}){ sheet=k; draft.s={...d}; renderSheet(); }
+function closeSheet(){ sheet=null; draft.s={}; document.querySelector('.scrim')?.remove(); }
+function renderSheet(){
+  document.querySelector('.scrim')?.remove();
+  if(!sheet) return;
+  const el=document.createElement('div'); el.className='scrim';
+  el.innerHTML=`<div class="sheet"><div class="grab"></div>${SHEETS[sheet]()}</div>`;
+  document.body.appendChild(el);
+}
+const SHEETS={
+  add(){
+    const d=draft.s, envs=S.enveloppes.filter(e=>!e.sup);
+    if(!envs.length) return `<h2>D'abord un bocal</h2><p class="note" style="margin-bottom:18px">Créez au moins un poste de dépense.</p><button class="btn" data-a="env-new">Créer un bocal</button>`;
+    d.env??=envs[0].id;
+    const e=envs.find(x=>x.id===d.env)||envs[0];
+    const v=(d.val||'0').replace('.',',');
+    return `<h2>${e.emoji} ${esc(e.nom)}</h2>
+      <div class="amount">${v}<small> €</small></div>
+      <div class="stack">
+        <div class="pad">${['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(k=>`<button class="key" data-a="key" data-v="${k}">${k}</button>`).join('')}</div>
+        <button class="btn" data-a="save-add">Enregistrer</button>
+        <div class="field"><label>Bocal</label><div class="chips">
+          ${envs.map(x=>`<button class="chip" data-a="pickenv" data-v="${x.id}" aria-pressed="${d.env===x.id}">${x.emoji} ${esc(x.nom)}</button>`).join('')}</div></div>
+        <div class="field"><label>Un mot (facultatif)</label>
+          <input class="input" id="i-note" placeholder="Plein d'essence, péage…" value="${esc(d.note||'')}"></div>
+        <button class="btn ghost" data-a="close">Annuler</button>
+      </div>`;
+  },
+  env(){
+    const d=draft.s, edit=!!d.id;
+    d.emoji??='🛒'; d.profil??='regulier'; d.jours??=30; d.recurrent??=true;
+    const escs=S.escapades.filter(e=>!e.sup);
+    return `<h2>${edit?'Modifier le bocal':'Nouveau bocal'}</h2><div class="stack">
+      <div class="duo">
+        <div class="field" style="flex:0 0 auto"><label>Icône</label>
+          <button class="chip sq" style="height:52px;width:52px" data-a="emojis">${d.emoji}</button></div>
+        <div class="field"><label>Nom</label><input class="input" id="i-envnom" placeholder="Courses" value="${esc(d.nom||'')}"></div>
+      </div>
+      ${d.emojis?`<div class="chips">${EMOJIS.map(x=>`<button class="chip sq" data-a="pickemoji" data-v="${x}" aria-pressed="${d.emoji===x}">${x}</button>`).join('')}</div>`:''}
+      <div class="duo">
+        <div class="field"><label>Montant (€)</label><input class="input num" id="i-montant" inputmode="decimal" placeholder="450" value="${d.montant??''}"></div>
+        <div class="field"><label>Sur combien de jours</label><input class="input num" id="i-jours" inputmode="numeric" value="${d.jours}"></div>
+      </div>
+      <div class="chips">${[7,14,30,90].map(j=>`<button class="chip" data-a="jours" data-v="${j}" aria-pressed="${+d.jours===j}">${j===7?'1 semaine':j===14?'2 semaines':j===30?'1 mois':'3 mois'}</button>`).join('')}</div>
+      <div class="field"><label>Comment l'argent part</label>
+        <div class="stack" style="gap:8px">${Object.entries(PROFILES).map(([k,p])=>`
+          <button class="seg" data-a="profil" data-v="${k}" aria-pressed="${d.profil===k}">
+            ${courbe(k)}<div class="st"><b>${p.nom}</b><small>${p.desc}</small></div></button>`).join('')}</div>
+        <p class="note" style="margin-top:6px">C'est ça qui évite les fausses alertes&nbsp;: en «&nbsp;gros départ&nbsp;», vider la moitié du bocal le premier jour est parfaitement normal.</p></div>
+      <div class="field"><label>Ensuite</label><div class="stack" style="gap:8px">
+        <button class="seg" data-a="recurrent" data-v="1" aria-pressed="${!!d.recurrent}"><div class="st"><b>Ça recommence</b><small>Le bocal se remplit à nouveau à la fin de la période</small></div></button>
+        <button class="seg" data-a="recurrent" data-v="0" aria-pressed="${!d.recurrent}"><div class="st"><b>Une fois et c'est tout</b><small>Un projet, un voyage, un achat</small></div></button>
+      </div></div>
+      ${escs.length?`<div class="field"><label>Rattacher à une escapade</label><div class="chips">
+        <button class="chip" data-a="rattache" data-v="" aria-pressed="${!d.escapade}">Aucune</button>
+        ${escs.map(x=>`<button class="chip" data-a="rattache" data-v="${x.id}" aria-pressed="${d.escapade===x.id}">${x.emoji} ${esc(x.nom)}</button>`).join('')}</div></div>`:''}
+      <button class="btn" data-a="save-env">${edit?'Enregistrer':'Créer le bocal'}</button>
+      ${edit?`<button class="btn danger" data-a="del-env" data-v="${d.id}">Supprimer ce bocal</button>`:''}
+      <button class="btn ghost" data-a="close">Annuler</button></div>`;
+  },
+  detail(){
+    const env=S.enveloppes.find(e=>e.id===draft.s.id); if(!env) return '<h2>Introuvable</h2>';
+    const s=etat(env);
+    const lg=S.depenses.filter(d=>!d.sup&&d.env===env.id&&d.at>=s.deb&&d.at<s.fin).sort((a,b)=>b.at-a.at);
+    return `<h2>${env.emoji} ${esc(env.nom)}</h2>
+      <div style="display:flex;gap:20px;align-items:center;margin-bottom:20px">
+        ${bocal(s.niveau,s.attNiveau,s.ton,84,true)}
+        <div><div class="eyebrow">reste</div>
+        <div style="font-family:var(--disp);font-weight:800;font-size:34px;letter-spacing:-.05em;color:${TON[s.ton]}">${money(Math.max(s.reste,0))}</div>
+        <div class="note" style="margin-top:7px">${money(s.depense)} dépensés sur ${money(env.montant)}<br>
+        Au rythme «&nbsp;${PROFILES[env.profil].nom.toLowerCase()}&nbsp;», on attendrait ${money(Math.round(s.attendu))} à ce stade.<br>
+        ${s.joursR} jour${s.joursR>1?'s':''} avant ${env.recurrent?'le prochain remplissage':'la fin'}.</div></div>
+      </div>
+      <div class="stack">
+        <button class="btn" data-a="add-in" data-v="${env.id}">Ajouter une dépense</button>
+        <button class="btn quiet" data-a="edit-env" data-v="${env.id}">Modifier le bocal</button>
+        ${lg.length?`<div><h3 class="eyebrow" style="margin-bottom:6px">Cette période</h3>
+          ${lg.map(d=>{const m=S.membres[d.par];return `<div class="fitem">
+            <div class="ft"><b>${esc(d.note||'Dépense')}</b><small>${m?esc(m.nom):'?'} · ${quand(d.at)}</small></div>
+            <div class="fa">−${money(d.montant)}</div>
+            <button class="x" data-a="del-dep" data-v="${d.id}">×</button></div>`}).join('')}</div>`
+          :'<p class="note">Rien de dépensé sur cette période.</p>'}
+        <button class="btn ghost" data-a="close">Fermer</button></div>`;
+  },
+  escapade(){
+    const d=draft.s; d.emoji??='✈️';
+    return `<h2>Nouvelle escapade</h2>
+      <p class="note" style="margin-bottom:18px">Un voyage, un week-end, Noël. Ses bocaux vivent sur les dates du séjour et se regroupent dans un onglet à part.</p>
+      <div class="stack">
+        <div class="duo">
+          <div class="field" style="flex:0 0 auto"><label>Icône</label>
+            <button class="chip sq" style="height:52px;width:52px" data-a="emojis">${d.emoji}</button></div>
+          <div class="field"><label>Nom</label><input class="input" id="i-escnom" placeholder="Corse, août" value="${esc(d.nom||'')}"></div>
+        </div>
+        ${d.emojis?`<div class="chips">${ESCMOJIS.map(x=>`<button class="chip sq" data-a="pickemoji" data-v="${x}" aria-pressed="${d.emoji===x}">${x}</button>`).join('')}</div>`:''}
+        <div class="duo">
+          <div class="field"><label>Départ</label><input class="input" type="date" id="i-deb" value="${d.debut||new Date().toISOString().slice(0,10)}"></div>
+          <div class="field"><label>Retour</label><input class="input" type="date" id="i-fin" value="${d.fin||''}"></div>
+        </div>
+        <button class="btn" data-a="save-esc">Créer l'escapade</button>
+        <p class="note">Ensuite&nbsp;: Transport et Courses en «&nbsp;gros départ&nbsp;», Restos et Sorties en «&nbsp;régulier&nbsp;». Le premier jour à −60&nbsp;% ne déclenchera aucune alerte.</p>
+        <button class="btn ghost" data-a="close">Annuler</button></div>`;
+  },
+  reglages(){
+    const m=S.membres[moi.id]||{};
+    return `<h2>Le foyer</h2><div class="stack">
+      <div class="field"><label>Code à partager</label>
+        <div class="codebox"><span style="flex:1">${moi.code}</span>
+          <button data-a="copier" style="font-family:var(--body);font-size:13.5px;letter-spacing:0;color:var(--olive);font-weight:700">Copier</button></div>
+        <p class="note">Sur l'autre téléphone&nbsp;: ouvrir la même adresse, «&nbsp;Rejoindre&nbsp;», taper ce code. Les deux écrans se mettent à jour instantanément.</p></div>
+      <div class="field"><label>Vous</label><input class="input" id="i-monnom" value="${esc(m.nom||'')}"></div>
+      <div class="chips">${AVATARS.map(x=>`<button class="chip sq" data-a="monavatar" data-v="${x}" aria-pressed="${m.emoji===x}">${x}</button>`).join('')}</div>
+      <button class="btn" data-a="save-moi">Enregistrer</button>
+      <p class="note">Le code est la seule serrure. Ne le publiez nulle part, et n'y stockez rien de plus sensible que des montants.</p>
+      <button class="btn ghost" data-a="quitter">Changer de foyer sur cet appareil</button>
+      <button class="btn ghost" data-a="close">Fermer</button></div>`;
+  },
+};
+
+/* ═══ actions ══════════════════════════════════════════════════ */
+function grabEnv(d){
+  const n=document.getElementById('i-envnom'); if(n) d.nom=n.value.trim();
+  const m=document.getElementById('i-montant'); if(m) d.montant=nb(m.value);
+  const j=document.getElementById('i-jours'); if(j&&j.value) d.jours=parseInt(j.value)||d.jours;
+}
+const touch=()=>{ if(S.membres[moi.id]) S.membres[moi.id].vu=Date.now(); };
+
+document.addEventListener('click',async ev=>{
+  if(ev.target.classList?.contains('scrim')) return closeSheet();
+  const b=ev.target.closest('[data-a]'); if(!b) return;
+  const a=b.dataset.a, v=b.dataset.v, d=draft.s||{};
+
+  if(a==='mode'){ draft.porte.mode=v; draft.porte.nom=val('i-nom'); paint(); return; }
+  if(a==='avatar'){ draft.porte.emoji=v; draft.porte.nom=val('i-nom'); draft.porte.code=val('i-code'); paint(); return; }
+  if(a==='entrer'){
+    const p=draft.porte; p.nom=val('i-nom').trim(); p.code=(val('i-code')||'').trim().toUpperCase();
+    if(!p.nom) return toast('Il manque votre prénom');
+    if(p.mode==='rejoindre'&&p.code.length!==8) return toast('Le code fait 8 caractères');
+    const code=p.mode==='creer'?newCode():p.code;
+    let distant=null;
+    try{ distant=await fetchFoyer(code); }
+    catch(e){ return toast('Connexion à la base impossible'); }
+    if(p.mode==='rejoindre'&&!distant) return toast('Aucun foyer avec ce code');
+    moi={code,id:uid(),nom:p.nom,emoji:p.emoji};
+    S=distant||blank();
+    S.membres[moi.id]={id:moi.id,nom:moi.nom,emoji:moi.emoji,vu:Date.now()};
+    store.set('bocal.moi',JSON.stringify(moi));
+    ecouter(); await sauver();
+    if(p.mode==='creer') openSheet('reglages');
+    return;
+  }
+
+  if(a==='tab'){ tab=v; paint(); return; }
+  if(a==='close'){ closeSheet(); return; }
+  if(a==='reglages'){ openSheet('reglages'); return; }
+  if(a==='add'){ openSheet('add'); return; }
+  if(a==='add-in'){ openSheet('add',{env:v}); return; }
+  if(a==='env-new'){ openSheet('env'); return; }
+  if(a==='escapade-new'){ openSheet('escapade'); return; }
+  if(a==='env'){ openSheet('detail',{id:v}); return; }
+  if(a==='edit-env'){ openSheet('env',{...S.enveloppes.find(e=>e.id===v)}); return; }
+
+  if(a==='key'){
+    let s=d.val||'0';
+    if(v==='⌫') s=s.length>1?s.slice(0,-1):'0';
+    else if(v===','){ if(!s.includes('.')) s+='.'; }
+    else { s=s==='0'?v:s+v; if(s.includes('.')&&s.split('.')[1].length>2) return; }
+    d.val=s; d.note=val('i-note'); renderSheet(); return;
+  }
+  if(a==='pickenv'){ d.env=v; d.note=val('i-note'); renderSheet(); return; }
+  if(a==='save-add'){
+    const montant=nb(d.val);
+    if(montant<=0) return toast('Le montant est à zéro');
+    S.depenses.push({id:uid(),env:d.env,montant,note:val('i-note').trim(),par:moi.id,at:Date.now(),maj:Date.now()});
+    touch(); closeSheet(); paint(); push(); toast(`−${money(montant)} enregistré`); return;
+  }
+  if(a==='del-dep'){ const x=S.depenses.find(z=>z.id===v); if(x){x.sup=true;x.maj=Date.now();} renderSheet(); paint(); push(); return; }
+
+  if(a==='emojis'){ grabEnv(d); d.emojis=!d.emojis; renderSheet(); return; }
+  if(a==='pickemoji'){ grabEnv(d); d.emoji=v; d.emojis=false; renderSheet(); return; }
+  if(a==='jours'){ grabEnv(d); d.jours=+v; renderSheet(); return; }
+  if(a==='profil'){ grabEnv(d); d.profil=v; renderSheet(); return; }
+  if(a==='recurrent'){ grabEnv(d); d.recurrent=v==='1'; renderSheet(); return; }
+  if(a==='rattache'){ grabEnv(d); d.escapade=v||null; renderSheet(); return; }
+  if(a==='save-env'){
+    grabEnv(d);
+    if(!d.nom) return toast('Il manque le nom');
+    if(!(d.montant>0)) return toast('Il manque le montant');
+    if(!(d.jours>0)) return toast('Il manque la durée');
+    const es=d.escapade?S.escapades.find(x=>x.id===d.escapade):null;
+    const base={nom:d.nom,emoji:d.emoji,montant:d.montant,jours:+d.jours,profil:d.profil,
+                recurrent:!!d.recurrent&&!es,escapade:d.escapade||null,maj:Date.now()};
+    if(d.id) Object.assign(S.enveloppes.find(e=>e.id===d.id),base);
+    else S.enveloppes.push({id:uid(),debut:es?es.debut:new Date().toISOString().slice(0,10),...base});
+    touch(); closeSheet(); paint(); push(); return;
+  }
+  if(a==='del-env'){ const x=S.enveloppes.find(e=>e.id===v); if(x){x.sup=true;x.maj=Date.now();} touch(); closeSheet(); paint(); push(); toast('Bocal supprimé'); return; }
+
+  if(a==='save-esc'){
+    const nom=val('i-escnom').trim(), deb=val('i-deb'), fin=val('i-fin');
+    if(!nom) return toast('Il manque le nom');
+    if(!deb||!fin) return toast('Il manque les dates');
+    const jours=Math.max(1,Math.round((new Date(fin)-new Date(deb))/DAY)+1), id=uid();
+    S.escapades.push({id,nom,emoji:d.emoji,debut:deb,fin,jours,maj:Date.now()});
+    touch(); closeSheet(); tab=id; paint(); push();
+    openSheet('env',{escapade:id,jours,recurrent:false,profil:'depart',emoji:'🚗',nom:'Transport'});
+    return;
+  }
+
+  if(a==='monavatar'){ S.membres[moi.id].emoji=v; S.membres[moi.id].nom=val('i-monnom'); touch(); renderSheet(); push(); return; }
+  if(a==='save-moi'){
+    S.membres[moi.id].nom=val('i-monnom').trim()||moi.nom; touch();
+    moi.nom=S.membres[moi.id].nom; moi.emoji=S.membres[moi.id].emoji;
+    store.set('bocal.moi',JSON.stringify(moi));
+    closeSheet(); paint(); push(); toast("C'est noté"); return;
+  }
+  if(a==='copier'){ try{ await navigator.clipboard.writeText(moi.code); toast('Code copié'); }catch(e){ toast('Code : '+moi.code); } return; }
+  if(a==='quitter'){ store.del('bocal.moi'); if(canal) sb.removeChannel(canal); moi=null; S=null; draft={}; closeSheet(); paint(); return; }
+});
+
+/* ═══ démarrage ════════════════════════════════════════════════ */
+(async function(){
+  const U=(window.SUPABASE_URL||'').trim(), K=(window.SUPABASE_KEY||'').trim();
+  if(U&&K){ try{ sb=createClient(U,K); }catch(e){ sb=null; } }
+  if(sb){
+    try{
+      const raw=store.get('bocal.moi');
+      if(raw){
+        moi=JSON.parse(raw);
+        S=(await fetchFoyer(moi.code))||blank();
+        if(!S.membres[moi.id]) S.membres[moi.id]={id:moi.id,nom:moi.nom,emoji:moi.emoji,vu:Date.now()};
+        ecouter();
+      }
+    }catch(e){ live=false; }
+  }
+  paint();
+  setInterval(()=>{ if(moi&&!sheet){ touch(); push(); } },60000);
+  document.addEventListener('visibilitychange',async()=>{
+    if(!document.hidden&&moi){ try{ const d=await fetchFoyer(moi.code); if(d) recevoir(d); }catch(e){} }
+  });
+})();
+</script>
+</body>
+</html>
